@@ -62,10 +62,10 @@ BOOL CMFCGameLine98Dlg::OnInitDialog()
 	mbmsmall.LoadBitmap(IDB_BM_SP);
 	mbmBkrSel.LoadBitmap(IDB_BM_SEL);
 	memset(mposTbl, 0, sizeof(mposTbl));
-	randomPoint(npos, ncolor);
-	setPosStatus(npos, ncolor, SHOW, LARGE);
-	randomPoint(npos, ncolor);
-	setPosStatus(npos, ncolor, SHOW, SMALL);
+	randomPoint(nposRand, ncolorRand);
+	setPosStatus(nposRand, ncolorRand, SHOW, LARGE);
+	randomPoint(nposRand, ncolorRand);
+	setPosStatus(nposRand, ncolorRand, SHOW, SMALL);
 	bselect = false;
 	return TRUE;  // return TRUE  unless you set the focus to a control
 }
@@ -175,15 +175,15 @@ void CMFCGameLine98Dlg::randomPoint(CPoint pos[], int color[])
 		int ID = AfxMessageBox(L"You are losted, Please press YES to new game!", MB_YESNO);
 		if (ID == IDYES) {
 			memset(mposTbl, 0, sizeof(mposTbl));
-			randomPoint(npos, ncolor);
-			setPosStatus(npos, ncolor, SHOW, LARGE);
-			randomPoint(npos, ncolor);
-			setPosStatus(npos, ncolor, SHOW, SMALL);
+			randomPoint(nposRand, ncolorRand);
+			setPosStatus(nposRand, ncolorRand, SHOW, LARGE);
+			randomPoint(nposRand, ncolorRand);
+			setPosStatus(nposRand, ncolorRand, SHOW, SMALL);
 		}
 		return;
 	}
-	int p[M];
-	for (int i = 0; i < M; i++) {
+	int p[M+1];
+	for (int i = 0; i < M + 1; i++) {
 		do {
 			p[i] = rand() % amount; // create point
 			// check pos is exist
@@ -219,6 +219,16 @@ void CMFCGameLine98Dlg::setPosFree()
 	}
 }
 
+void CMFCGameLine98Dlg::setPosKills()
+{
+	for each (auto pos in mapPosKills)
+	{
+		mposTbl[pos.x][pos.y] = postblNull;
+	}
+	mapPosKills.clear();
+	Invalidate(true);
+}
+
 void CMFCGameLine98Dlg::setPosStatus(CPoint pos[], int color[], int stat, int type)
 {
 	for (int i = 0; i < M; i++) {
@@ -250,23 +260,40 @@ void CMFCGameLine98Dlg::OnLButtonDown(UINT nFlags, CPoint point)
 		}
 	}
 	else {
-		if (mposTbl[i][j].status == HIDE) {
+		if (mposTbl[i][j].status == HIDE || mposTbl[i][j].type == SMALL) {
+			// move pos small to other
+			if (mposTbl[i][j].type == SMALL)
+			{
+				for (auto &pos : nposRand)
+				{
+					if (pos.x == i && pos.y == j)
+					{
+						pos = nposRand[M];
+					}
+				}
+			}
 			// swap box selected
 			bselect = false;
-			pointtable postbl = mposTbl[i][j];
+			//pointtable postbl = mposTbl[i][j];
 			mposTbl[i][j] = mposTbl[mposSel.x][mposSel.y];
-			mposTbl[mposSel.x][mposSel.y] = postbl;
+			mposTbl[mposSel.x][mposSel.y] = postblNull;
+			
 			// change small to large
 			for (int i = 0; i < M; i++) {
-				mposTbl[npos[i].x][npos[i].y].type = LARGE;
+				mposTbl[nposRand[i].x][nposRand[i].y].type = LARGE;
+				mposTbl[nposRand[i].x][nposRand[i].y].status = SHOW;
+				mposTbl[nposRand[i].x][nposRand[i].y].color = ncolorRand[i];
 			}
 			//set three pos to show small
-			randomPoint(npos, ncolor);
-			setPosStatus(npos, ncolor, SHOW, SMALL);
+			randomPoint(nposRand, ncolorRand);
+			setPosStatus(nposRand, ncolorRand, SHOW, SMALL);
 			// repaint
 			Invalidate(true);
 			findHor();
 			findVer();
+			findrightDiagonal();
+			findLeftDiagonal();
+			setPosKills();
 		}
 		else if (mposTbl[i][j].status == SHOW && mposTbl[i][j].type == LARGE) {
 			bselect = true;
@@ -284,10 +311,10 @@ void CMFCGameLine98Dlg::OnLButtonDown(UINT nFlags, CPoint point)
 void CMFCGameLine98Dlg::findHor()
 {
 	map<int, map<int, int>> m;
-	for (size_t i = 0; i < N; i++)
+	for (int i = 0; i < N; i++)
 	{
 		map<int, int> n;
-		for (size_t j = 0, k = 1; j < N && k <= N; k++)
+		for (int j = 0, k = 1; j < N && k <= N; k++)
 		{
 			if (k == N) {
 				if ((k - j) >= MIN) {
@@ -316,23 +343,25 @@ void CMFCGameLine98Dlg::findHor()
 		{
 			//cout <<  << " " << p.first << " " << p.second << "  ";
 			int i = n.first;
-			for (size_t j = p.first; j < (p.first + p.second); j++)
+			for (int j = p.first; j < (p.first + p.second); j++)
 			{
-				mposTbl[i][j] = postblNull;
+				//mposTbl[i][j] = postblNull;
+				mapPosKills.push_back(CPoint(i, j));
 			}
 		}
 	}
 	//Sleep(1000);
-	Invalidate(true);
+	//Invalidate(true);
 }
+
 
 void CMFCGameLine98Dlg::findVer()
 {
 	map<int, map<int, int>> m;
-	for (size_t i = 0; i < N; i++)
+	for (int i = 0; i < N; i++)
 	{
 		map<int, int> n;
-		for (size_t j = 0, k = 1; j < N && k <= N; k++)
+		for (int j = 0, k = 1; j < N && k <= N; k++)
 		{
 			if (k == N) {
 				if ((k - j) >= MIN) {
@@ -340,10 +369,10 @@ void CMFCGameLine98Dlg::findVer()
 				}
 				break;
 			}
-			if (mposTbl[i][j].status != SHOW || mposTbl[i][j].type != LARGE) {
+			if (mposTbl[j][i].status != SHOW || mposTbl[j][i].type != LARGE) {
 				j = k; continue;
 			}
-			if (mposTbl[i][k].status != SHOW || mposTbl[i][k].type != LARGE || mposTbl[i][k].color != mposTbl[i][j].color) {
+			if (mposTbl[k][i].status != SHOW || mposTbl[k][i].type != LARGE || mposTbl[k][i].color != mposTbl[j][i].color) {
 				if ((k - j) >= MIN) {
 					n[j] = k - j;
 				}
@@ -361,12 +390,187 @@ void CMFCGameLine98Dlg::findVer()
 		{
 			//cout <<  << " " << p.first << " " << p.second << "  ";
 			int i = n.first;
-			for (size_t j = p.first; j < (p.first + p.second); j++)
+			for (int j = p.first; j < (p.first + p.second); j++)
 			{
-				mposTbl[i][j] = postblNull;
+				//mposTbl[j][i] = postblNull;
+				mapPosKills.push_back(CPoint(j, i));
 			}
 		}
 	}
 	//Sleep(1000);
-	Invalidate(true);
+	//Invalidate(true);
+}
+void CMFCGameLine98Dlg:: findrightDiagonal() {
+	//  - right diagonal
+	map<int, map<int, int>> ml;
+	map<int, map<int, int>> mr;
+	for (int p = 0; p <= N - MIN; p++)
+	{
+		map<int, int> n;
+		for (int i = p, j = 0, k = 1;(j < N - p )&& k <= N; k++) {
+			if (k == N) {
+				if ((k - j) >= MIN) {
+					n[j] = k - j;
+				}
+				break;
+			}
+			if (mposTbl[i][j].status != 1 || mposTbl[i][j].type != 1) {
+				j = k;
+				i = p + k;
+				continue;
+			}
+			if (mposTbl[i + k - j][k].status != 1 || mposTbl[i + k - j][k].type != 1 || mposTbl[i + k - j][k].color != mposTbl[i][j].color) {
+				if ((k - j) >= MIN) {
+					n[j] = k - j;
+				}
+				j = k;
+				i = p + k;
+				continue;
+			}
+		}
+		if (n.size() > 0)
+			ml[p] = n;
+	}
+	for (int p = 0; p <= N - MIN; p++)
+	{
+		map<int, int> n;
+		for (int i = p, j = 0, k = 1; (i < N - p) && k <= N; k++) {
+			if (k == N) {
+				if ((k - j) >= MIN) {
+					n[j] = k - j;
+				}
+				break;
+			}
+			if (mposTbl[j][i].status != 1 || mposTbl[j][i].type != 1) {
+				j = k;
+				i = p + k;
+				continue;
+			}
+			if (mposTbl[k][i + k - j].status != 1 || mposTbl[k][i + k - j].type != 1 || mposTbl[k][i + k - j].color != mposTbl[j][i].color) {
+				if ((k - j) >= MIN) {
+					n[j] = k - j;
+				}
+				j = k;
+				i = p + k;
+				continue;
+			}
+		}
+		if (n.size() > 0)
+			mr[p] = n;
+	}
+	for (auto& n : ml)
+	{
+		for (auto& p : n.second)
+		{
+			int l = n.first;
+			int r = p.second;
+			int j = p.first;
+			int i = l + j;
+			for (int k = 0; k < r; k++)
+			{
+				mapPosKills.push_back(CPoint(i + k, j + k));
+			}
+		}
+	}
+	for (auto& n : mr)
+	{
+		for (auto& p : n.second)
+		{
+			int l = n.first;
+			int r = p.second;
+			int j = p.first;
+			int i = l + j;
+			for (int k = 0; k < r; k++)
+			{
+				mapPosKills.push_back(CPoint(j + k, i + k));
+			}
+		}
+	}
+}
+void CMFCGameLine98Dlg::findLeftDiagonal() {
+	//  - right diagonal
+	map<int, map<int, int>> ml;
+	map<int, map<int, int>> mr;
+	for (int p = N-1; p >= MIN-1; p--)
+	{
+		map<int, int> n;
+		for (int i = 0, j = p, k = 1; i <= p && k <= p+1; k++) {
+			if (k == p+1) {
+				if ((k - i) >= MIN) {
+					n[i] = k - i;
+				}
+				break;
+			}
+			if (mposTbl[i][j].status != 1 || mposTbl[i][j].type != 1) {
+				i = k;
+				j = p - k;
+				continue;
+			}
+			if (mposTbl[k][p-k].status != 1 || mposTbl[k][p-k].type != 1 || mposTbl[k][p - k].color != mposTbl[i][j].color) {
+				if ((k - i) >= MIN) {
+					n[i] = k - i;
+				}
+				i = k;
+				j = p - k;
+				continue;
+			}
+		}
+		if (n.size() > 0)
+			ml[p] = n;
+	}
+	for (int p = 1; p <= N-MIN; p++)
+	{
+		map<int, int> n;
+		for (int i = p, j = N-1, k = 1+p; k <= N; k++) {
+			if (k == N) {
+				if ((k - i) >= MIN) {
+					n[i] = k - i;
+				}
+				break;
+			}
+			if (mposTbl[i][j].status != 1 || mposTbl[i][j].type != 1) {
+				i = k;
+				j = N - 1 - (k - p);
+				continue;
+			}
+			if (mposTbl[k][N - 1 - (k - p)].status != 1 || mposTbl[k][N - 1 - (k - p)].type != 1 || mposTbl[k][N - 1 - (k - p)].color != mposTbl[i][j].color) {
+				if ((k - i) >= MIN) {
+					n[i] = k - i;
+				}
+				j = N - 1 - (k - p);
+				i = k;
+				continue;
+			}
+		}
+		if (n.size() > 0)
+			mr[p] = n;
+	}
+	for (auto& n : ml)
+	{
+		for (auto& p : n.second)
+		{
+			int l = n.first;
+			int r = p.second;
+			int i = p.first;
+			int j = l - i;
+			for (int k = 0; k < r; k++)
+			{
+				mapPosKills.push_back(CPoint(i + k, j - k));
+			}
+		}
+	}
+	for (auto& n : mr)
+	{
+		for (auto& p : n.second)
+		{
+			int l = n.first;
+			int r = p.second;
+			int i = p.first;
+			int j = N - 1 - (i - l);
+			for (int k = 0; k < r; k++)
+			{
+				mapPosKills.push_back(CPoint(i + k, j - k));
+			}
+		}
+	}
 }

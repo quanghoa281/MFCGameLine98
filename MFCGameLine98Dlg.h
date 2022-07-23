@@ -4,6 +4,8 @@
 
 #pragma once
 #include <map>
+#include <set>
+#include <vector>
 
 using namespace std;
 
@@ -43,12 +45,12 @@ protected:
 	UINT_PTR eTime, nTime;
 	CBitmap mbmlarge, mbmsmall;
 	CBitmap mbmBkrSel;
-	CPoint npos[M];
-	int ncolor[M];
+	CPoint nposRand[M+1];
+	int ncolorRand[M+1];
 	bool bselect;
 	CPoint mposSel;
-	
 
+	vector<CPoint>mapPosKills;
 	map<int, CPoint> mapPosFree;
 	// Generated message map functions
 	virtual BOOL OnInitDialog();
@@ -59,8 +61,11 @@ public:
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
 	void randomPoint(CPoint pos[], int color[]);
 	void setPosFree();
+	void setPosKills();
 	void setPosStatus(CPoint pos[], int color[], int stat, int type);
 	afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
 	void findHor();
 	void findVer();
+	void findrightDiagonal();
+	void findLeftDiagonal();
 };
