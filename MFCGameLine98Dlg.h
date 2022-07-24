@@ -41,16 +41,24 @@ protected:
 
 // Implementation
 protected:
+	CBrush m_redbrush, m_brush;
+	COLORREF m_background, m_textcolor;
+	CMenu m_MenuSys;
+	CToolBar  m_ToolBar;
 	HICON m_hIcon;
 	UINT_PTR eTime, nTime;
 	CBitmap mbmlarge, mbmsmall;
 	CBitmap mbmBkrSel;
+	CBitmap mbmBkrBox;
+
 	CPoint nposRand[M+1];
 	int ncolorRand[M+1];
 	bool bselect;
 	CPoint mposSel;
+	int nScores;
+	int nDispTime[3];
 
-	vector<CPoint>mapPosKills;
+	vector<CPoint>vtPosKills;
 	map<int, CPoint> mapPosFree;
 	// Generated message map functions
 	virtual BOOL OnInitDialog();
@@ -68,4 +76,11 @@ public:
 	void findVer();
 	void findrightDiagonal();
 	void findLeftDiagonal();
+	afx_msg void OnBtnNew();
+	afx_msg void OnBtnExit();
+	CEdit mEdxPoint;
+	CEdit mEdxTime;
+	void calPoints();
+	void resetGame();
+	afx_msg HBRUSH OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor);
 };
