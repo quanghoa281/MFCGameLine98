@@ -8,8 +8,8 @@
 #define IDB_BM_SEL                      131
 #define IDR_MENU_SYS                    132
 #define IDR_TOOLBAR_SYS                 144
+#define IDB_BM_BKGGAME                  147
 #define IDC_EDX_POINT                   1003
-#define IDC_EDX_POINT2                  1004
 #define IDC_EDX_TIME                    1004
 #define ID_GAMES_NEW                    32771
 #define ID_GAMES_EXIT                   32772
@@ -20,7 +20,7 @@
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        146
+#define _APS_NEXT_RESOURCE_VALUE        148
 #define _APS_NEXT_COMMAND_VALUE         32785
 #define _APS_NEXT_CONTROL_VALUE         1009
 #define _APS_NEXT_SYMED_VALUE           101

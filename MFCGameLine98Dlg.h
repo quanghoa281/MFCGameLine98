@@ -48,13 +48,15 @@ protected:
 	HICON m_hIcon;
 	UINT_PTR eTime, nTime;
 	CBitmap mbmlarge, mbmsmall;
-	CBitmap mbmBkrSel;
-	CBitmap mbmBkrBox;
+	CBitmap mbmBkGame;
+	CBitmap mbmBkSel;
+	CBitmap mbmBkBox;
 
 	CPoint nposRand[M+1];
 	int ncolorRand[M+1];
 	bool bselect;
 	CPoint mposSel;
+	CPoint mposSel2;
 	int nScores;
 	int nDispTime[3];
 
@@ -76,6 +78,9 @@ public:
 	void findVer();
 	void findrightDiagonal();
 	void findLeftDiagonal();
+	bool checkPathExist(CPoint src, CPoint des);
+	bool isSafe(int i, int j);
+	bool isPath(int i, int j, bool visited[][N], CPoint des);
 	afx_msg void OnBtnNew();
 	afx_msg void OnBtnExit();
 	CEdit mEdxPoint;

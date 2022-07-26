@@ -38,9 +38,9 @@ CMFCGameLine98Dlg::CMFCGameLine98Dlg(CWnd* pParent /*=nullptr*/)
 	memset(ncolorRand, 0, sizeof(ncolorRand));
 	memset(nDispTime, 0, sizeof(nDispTime));
 	bselect = 0;
-	mposSel = CPoint(0 , 0);
+	mposSel = CPoint(0, 0);
 	nScores = 0;
-	
+
 }
 
 void CMFCGameLine98Dlg::DoDataExchange(CDataExchange* pDX)
@@ -72,15 +72,16 @@ BOOL CMFCGameLine98Dlg::OnInitDialog()
 	SetIcon(m_hIcon, TRUE);			// Set big icon
 	SetIcon(m_hIcon, FALSE);		// Set small icon
 	//MoveWindow(0, 0, 466 + 450, 489 + 450 /*+ 20 */+ P0, TRUE);
+	this->SetWindowTextW(L"Balls Game");
 	//
 	TCHAR szDirectory[MAX_PATH];
 	::GetCurrentDirectory(sizeof(szDirectory) - 1, szDirectory);
-	CString m_szFontFile = CString(szDirectory) + L"\\font\\Farrington-7B-Qiqi.ttf";
+	CString m_szFontFile = CString(szDirectory) + L"\\font\\SFDigitalReadout-MediumObli.ttf";
 	int nResults = AddFontResourceEx(m_szFontFile, FR_PRIVATE, NULL);
 	CFont* m_pFont = new CFont();
 	CFont* m_pF = new CFont();
-	m_pF->CreateFontW(30,           // nHeight 
-		18,                         // nWidth 
+	m_pF->CreateFontW(60,           // nHeight 
+		30,                         // nWidth 
 		0,                          // nEscapement 
 		0,                          // nOrientation 
 		FW_LIGHT,                   // nWeight 
@@ -92,10 +93,9 @@ BOOL CMFCGameLine98Dlg::OnInitDialog()
 		CLIP_DEFAULT_PRECIS,        // nClipPrecision 
 		DEFAULT_QUALITY,            // nQuality 
 		DEFAULT_PITCH | FF_SWISS,   // nPitchAndFamily 
-		//_T("Farrington-7B-Qiqi"));//_T("Farrington-7B-Qiqi")
-		_T("Lucida Console"));//_T("Farrington-7B-Qiqi")
-	//m_pFont->CreatePointFont(155, _T("Lucida Console")); //consolas
-	m_background = RGB(128, 255, 255);
+		_T("SF Digital Readout"));
+	m_pFont->CreatePointFont(250, _T("SF Digital Readout")); //consolas
+	m_background = RGB(0, 0, 0);
 	m_textcolor = RGB(255, 0, 0);
 	m_brush.CreateSolidBrush(m_background);
 	// menu
@@ -111,7 +111,7 @@ BOOL CMFCGameLine98Dlg::OnInitDialog()
 	RepositionBars(AFX_IDW_CONTROLBAR_FIRST, AFX_IDW_CONTROLBAR_LAST, 0);
 	// edit control 
 	GetDlgItem(IDC_EDX_POINT)->SetFont(m_pF, TRUE);
-	GetDlgItem(IDC_EDX_TIME)->SetFont(m_pF, TRUE);
+	GetDlgItem(IDC_EDX_TIME)->SetFont(m_pFont, TRUE);
 	mEdxPoint.ModifyStyle(0, WS_DISABLED);
 	mEdxTime.ModifyStyle(0, WS_DISABLED);
 	CString csPoint; csPoint.Format(L"%d", nScores);
@@ -122,7 +122,8 @@ BOOL CMFCGameLine98Dlg::OnInitDialog()
 	SetTimer(eTime, nTime, NULL);
 	mbmlarge.LoadBitmap(IDB_BM_SP);
 	mbmsmall.LoadBitmap(IDB_BM_SP);
-	mbmBkrSel.LoadBitmap(IDB_BM_SEL);
+	mbmBkSel.LoadBitmap(IDB_BM_SEL);
+	mbmBkGame.LoadBitmap(IDB_BM_BKGGAME);
 	resetGame();
 	return TRUE;  // return TRUE  unless you set the focus to a control
 }
@@ -155,14 +156,21 @@ void CMFCGameLine98Dlg::OnPaint()
 		CPaintDC dc(this); // device context for painting
 
 		CRect crect;
-		CBitmap* bmObj, * bmBkr;
-		BITMAP bmsp, bmbklr;
+		CBitmap* pbmSphere, * pbmSel, * pbmGame;
+		BITMAP BMSphe, BMSel, BMGame;
 		CDC memDC;
 		GetClientRect(&crect);
 		int rexbox = SGAME / N;
 		int boxlarge = rexbox - rexbox / 10;
 		int boxsmall = rexbox - rexbox / 5 * 2;
 
+		//
+		memDC.CreateCompatibleDC(&dc);
+		//
+		mbmBkGame.GetBitmap(&BMGame);
+		pbmGame = memDC.SelectObject(&mbmBkGame);
+		dc.StretchBlt(P0x, P0y, SGAME, SGAME, &memDC, 0, 0, BMGame.bmWidth, BMGame.bmHeight, SRCCOPY);
+		//
 		CPen cpenrow(PS_SOLID, 3, RGB(214, 214, 214));
 		CPen cpencol(PS_SOLID, 3, RGB(214, 214, 214));
 		for (int i = 0; i <= N; i++) {
@@ -181,32 +189,49 @@ void CMFCGameLine98Dlg::OnPaint()
 				dc.LineTo(SGAME, P0y + i * rexbox);
 			}
 		}
-		//
-		mbmBkrSel.GetBitmap(&bmbklr);
-		memDC.CreateCompatibleDC(&dc);
-		bmBkr = memDC.SelectObject(&mbmBkrSel);
+		const int px1 = 60;
+		const int py1 = 200;
+		for (size_t i = 0; i <= M; i++)
+		{
+			// line row
+			dc.MoveTo(SGAME + px1, py1 + i * rexbox);
+			dc.LineTo(SGAME + px1 + rexbox, py1 + i * rexbox);
+			// line col
+			if (i < 2) {
+				dc.MoveTo(SGAME + px1 + i * rexbox, py1);
+				dc.LineTo(SGAME + px1 + i * rexbox, py1 + 3 * rexbox);
+			}
+		}
+		mbmBkSel.GetBitmap(&BMSel);
+		pbmSel = memDC.SelectObject(&mbmBkSel);
 		if (bselect) {
-			dc.StretchBlt(P0x + mposSel.y * rexbox, P0y + mposSel.x * rexbox, rexbox, rexbox, &memDC, 0, 0, bmbklr.bmWidth, bmbklr.bmHeight, SRCCOPY);
+			dc.StretchBlt(P0x + mposSel.y * rexbox, P0y + mposSel.x * rexbox, rexbox, rexbox, &memDC, 0, 0, BMSel.bmWidth, BMSel.bmHeight, SRCCOPY);
 		}
 
-		mbmlarge.GetBitmap(&bmsp);
-		bmObj = memDC.SelectObject(&mbmlarge);
-		int lensp = bmsp.bmWidth / 3;
+		mbmlarge.GetBitmap(&BMSphe);
+		pbmSphere = memDC.SelectObject(&mbmlarge);
+		int lensp = BMSphe.bmWidth / 3;
 		for (int i = 0; i < N; i++) {
 			for (int j = 0; j < N; j++) {
 				if (mposTbl[i][j].status == SHOW) {
 					int idxcolor = mposTbl[i][j].color;
 					if (mposTbl[i][j].type == LARGE) {
-						dc.StretchBlt(P0x + j * rexbox + boxlarge, P0y + i * rexbox + boxlarge, rexbox - boxlarge * 2, rexbox - boxlarge * 2, &memDC, idxcolor * lensp, 0, lensp, bmsp.bmHeight, SRCCOPY);
+						dc.StretchBlt(P0x + j * rexbox + boxlarge, P0y + i * rexbox + boxlarge, rexbox - boxlarge * 2, rexbox - boxlarge * 2, &memDC, idxcolor * lensp, 0, lensp, BMSphe.bmHeight, SRCCOPY);
 					}
 					else {
-						dc.StretchBlt(P0x + j * rexbox + boxsmall, P0y + i * rexbox + boxsmall, rexbox - boxsmall * 2, rexbox - boxsmall * 2, &memDC, idxcolor * lensp, 0, lensp, bmsp.bmHeight, SRCCOPY);
+						dc.StretchBlt(P0x + j * rexbox + boxsmall, P0y + i * rexbox + boxsmall, rexbox - boxsmall * 2, rexbox - boxsmall * 2, &memDC, idxcolor * lensp, 0, lensp, BMSphe.bmHeight, SRCCOPY);
 					}
 				}
 			}
 		}
-		memDC.SelectObject(bmObj);
-		memDC.SelectObject(bmBkr);
+		for (int i = 0; i < M; i++) {
+			int colorball = ncolorRand[i];
+			boxlarge = 5;
+			dc.StretchBlt(SGAME + px1 + boxlarge, py1 + i * rexbox + boxlarge, rexbox - boxlarge * 2, rexbox - boxlarge * 2, &memDC, colorball * lensp, 0, lensp, BMSphe.bmHeight, SRCCOPY);
+		}
+		memDC.SelectObject(pbmSphere);
+		memDC.SelectObject(pbmSel);
+		memDC.SelectObject(pbmGame);
 		memDC.DeleteDC();
 		CDialogEx::OnPaint();
 	}
@@ -325,6 +350,7 @@ void CMFCGameLine98Dlg::OnLButtonDown(UINT nFlags, CPoint point)
 	int i = (point.y - P0y) / rexbox;
 	int j = (point.x - P0x) / rexbox;
 
+	// select first
 	if (bselect == false) {
 		if (mposTbl[i][j].status == SHOW && mposTbl[i][j].type == LARGE) {
 			bselect = true;
@@ -336,55 +362,63 @@ void CMFCGameLine98Dlg::OnLButtonDown(UINT nFlags, CPoint point)
 			return;
 		}
 	}
+	// select second
 	else {
+		// clear select
 		if (i == mposSel.x && j == mposSel.y) {
 			bselect = false;
 			Invalidate(true);
-		}else
-		if (mposTbl[i][j].status == HIDE || mposTbl[i][j].type == SMALL) {
-			// move pos small to other
-			if (mposTbl[i][j].type == SMALL)
-			{
-				for (auto& pos : nposRand)
-				{
-					if (pos.x == i && pos.y == j)
-					{
-						pos = nposRand[M];
-					}
-				}
-			}
-			// swap box selected
-			bselect = false;
-			//pointtable postbl = mposTbl[i][j];
-			mposTbl[i][j] = mposTbl[mposSel.x][mposSel.y];
-			mposTbl[mposSel.x][mposSel.y] = postblNull;
-
-			// change small to large
-			for (int i = 0; i < M; i++) {
-				mposTbl[nposRand[i].x][nposRand[i].y].type = LARGE;
-				mposTbl[nposRand[i].x][nposRand[i].y].status = SHOW;
-				mposTbl[nposRand[i].x][nposRand[i].y].color = ncolorRand[i];
-			}
-			//set three pos to show small
-			randomPoint(nposRand, ncolorRand);
-			setPosStatus(nposRand, ncolorRand, SHOW, SMALL);
-			// repaint
-			Invalidate(true);
-			findHor();
-			findVer();
-			findrightDiagonal();
-			findLeftDiagonal();
-			calPoints();
-			setPosKills();
-		}
-		else if (mposTbl[i][j].status == SHOW && mposTbl[i][j].type == LARGE) {
-			bselect = true;
-			mposSel = CPoint(i, j);
-			Invalidate(true);
 		}
 		else {
-			//AfxMessageBox(L"Please select the empty box!", MB_OK);
-			return;
+			if (mposTbl[i][j].status == HIDE || mposTbl[i][j].type == SMALL) {
+				if (checkPathExist(mposSel, CPoint(i, j)) == false) {
+					return;
+				}
+				// move pos small to other
+				if (mposTbl[i][j].type == SMALL)
+				{
+					for (auto& pos : nposRand)
+					{
+						if (pos.x == i && pos.y == j)
+						{
+							pos = nposRand[M];
+						}
+					}
+				}
+				// swap box selected
+				bselect = false;
+				//pointtable postbl = mposTbl[i][j];
+				mposTbl[i][j] = mposTbl[mposSel.x][mposSel.y];
+				mposTbl[mposSel.x][mposSel.y] = postblNull;
+
+				// change small to large
+				for (int i = 0; i < M; i++) {
+					mposTbl[nposRand[i].x][nposRand[i].y].type = LARGE;
+					mposTbl[nposRand[i].x][nposRand[i].y].status = SHOW;
+					mposTbl[nposRand[i].x][nposRand[i].y].color = ncolorRand[i];
+				}
+				//create three small ball 
+				randomPoint(nposRand, ncolorRand);
+				setPosStatus(nposRand, ncolorRand, SHOW, SMALL);
+				// repaint
+				Invalidate(true);
+				findHor();
+				findVer();
+				findrightDiagonal();
+				findLeftDiagonal();
+				calPoints();
+				setPosKills();
+			}
+			// select again
+			else if (mposTbl[i][j].status == SHOW && mposTbl[i][j].type == LARGE) {
+				bselect = true;
+				mposSel = CPoint(i, j);
+				Invalidate(true);
+			}
+			else {
+				//AfxMessageBox(L"Please select the empty box!", MB_OK);
+				return;
+			}
 		}
 	}
 	CDialogEx::OnLButtonDown(nFlags, point);
@@ -727,7 +761,7 @@ HBRUSH CMFCGameLine98Dlg::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
 			break;
 		case IDC_EDX_TIME:
 			pDC->SetBkColor(m_background);    // change the background
-			pDC->SetTextColor(RGB(0, 0, 0));  // change the text color
+			pDC->SetTextColor(RGB(255, 255, 255));  // change the text color
 			hbr = (HBRUSH)m_brush;    // apply the rose brush
 			break;
 		}
@@ -735,4 +769,73 @@ HBRUSH CMFCGameLine98Dlg::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
 
 	// TODO:  Return a different brush if the default is not desired
 	return hbr;
+}
+bool CMFCGameLine98Dlg::isSafe(int i, int j)
+{
+	if (i >= 0 && i < N && j >= 0 && j < N)
+		return true;
+	return false;
+}
+bool CMFCGameLine98Dlg::isPath(int i, int j, bool visited[][N], CPoint des)
+{
+	// Checking the boundaries, walls and
+	// whether the cell is unvisited
+	if (isSafe(i, j) && mposTbl[i][j].type != SHOW
+		&& !visited[i][j])
+	{
+		// Make the cell visited
+		visited[i][j] = true;
+
+		// if the cell is the required
+		// destination then return true
+		if (i == des.x && j == des.y)
+			return true;
+
+		// traverse up
+		bool up = isPath(i - 1, j, visited, des);
+
+		// if path is found in up
+		// direction return true
+		if (up)
+			return true;
+
+		// traverse left
+		bool left = isPath(i, j - 1, visited, des);
+
+		// if path is found in left
+		// direction return true
+		if (left)
+			return true;
+
+		// traverse down
+		bool down = isPath(i + 1, j, visited, des);
+
+		// if path is found in down
+		// direction return true
+		if (down)
+			return true;
+
+		// traverse right
+		bool right = isPath(i, j + 1, visited, des);
+
+		// if path is found in right
+		// direction return true
+		if (right)
+			return true;
+	}
+
+	// no path has been found
+	return false;
+}
+bool CMFCGameLine98Dlg::checkPathExist(CPoint src, CPoint des)
+{
+	// Checking the boundaries, walls and
+	// whether the cell is unvisited
+	bool visited[N][N];
+	memset(visited, false, sizeof(visited));
+	if (src == des)return true;
+	return (isPath(src.x+1, src.y, visited, des) || 
+		isPath(src.x-1, src.y, visited, des) ||
+		isPath(src.x, src.y+1, visited, des) ||
+		isPath(src.x, src.y-1, visited, des));
 }
