@@ -75,9 +75,9 @@ BOOL CMFCGameLine98Dlg::OnInitDialog()
 	this->SetWindowTextW(L"Balls Game");
 	//
 	TCHAR szDirectory[MAX_PATH];
-	GetCurrentDirectoryW(sizeof(szDirectory) - 1, szDirectory);
+	//GetCurrentDirectoryW(sizeof(szDirectory) - 1, szDirectory);
 	CString m_szFontFile = CString(szDirectory) + L"\\font\\SFDigitalReadout-MediumObli.ttf";
-	int nResults = AddFontResourceEx(m_szFontFile, FR_PRIVATE, NULL);
+	//int nResults = AddFontResourceEx(m_szFontFile, FR_PRIVATE, NULL);
 	CFont* m_pFont = new CFont();
 	CFont* m_pF = new CFont();
 	m_pF->CreateFontW(60,           // nHeight 
