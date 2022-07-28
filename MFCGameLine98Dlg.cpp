@@ -12,17 +12,9 @@
 #define new DEBUG_NEW
 #endif
 
-struct pointtable {
-	int color;  // 1 red/ 2 blue/ 3 green
-	int type;   // 1 large / 0 small
-	int status; // 0 hide / 1 show
-};
+
 // CMFCGameLine98Dlg dialog
-pointtable mposTbl[9][9];
-pointtable postblNull;
-constexpr auto P0x = 0;
-constexpr auto P0y = 37;
-constexpr auto SGAME = 900;
+
 
 CMFCGameLine98Dlg::CMFCGameLine98Dlg(CWnd* pParent /*=nullptr*/)
 	: CDialogEx(IDD_MFCGAMELINE98_DIALOG, pParent)
@@ -34,13 +26,19 @@ CMFCGameLine98Dlg::CMFCGameLine98Dlg(CWnd* pParent /*=nullptr*/)
 	postblNull.type = SMALL;
 	postblNull.status = HIDE;
 	//
+	memset(mposTbl, 0, sizeof(mposTbl));
+	memset(mposTblBef, 0, sizeof(mposTblBef));
+	memset(nScoresUndo, 0, sizeof(nScoresUndo));
 	memset(nposRand, 0, sizeof(nposRand));
 	memset(ncolorRand, 0, sizeof(ncolorRand));
 	memset(nDispTime, 0, sizeof(nDispTime));
 	bselect = 0;
 	mposSel = CPoint(0, 0);
 	nScores = 0;
-
+	idxUndo = 0;
+	idxCur = 0;
+	totalgoes = 0;
+	idxUndoFirst = 0;
 }
 
 void CMFCGameLine98Dlg::DoDataExchange(CDataExchange* pDX)
@@ -58,6 +56,8 @@ BEGIN_MESSAGE_MAP(CMFCGameLine98Dlg, CDialogEx)
 	ON_COMMAND(ID_BTN_NEW, &CMFCGameLine98Dlg::OnBtnNew)
 	ON_COMMAND(ID_BTN_EXIT, &CMFCGameLine98Dlg::OnBtnExit)
 	ON_WM_CTLCOLOR()
+	ON_COMMAND(ID_BTN_REDO, &CMFCGameLine98Dlg::OnBtnRedo)
+	ON_COMMAND(ID_BTN_UNDO, &CMFCGameLine98Dlg::OnBtnUndo)
 END_MESSAGE_MAP()
 
 
@@ -75,7 +75,7 @@ BOOL CMFCGameLine98Dlg::OnInitDialog()
 	this->SetWindowTextW(L"Balls Game");
 	//
 	TCHAR szDirectory[MAX_PATH];
-	::GetCurrentDirectory(sizeof(szDirectory) - 1, szDirectory);
+	GetCurrentDirectoryW(sizeof(szDirectory) - 1, szDirectory);
 	CString m_szFontFile = CString(szDirectory) + L"\\font\\SFDigitalReadout-MediumObli.ttf";
 	int nResults = AddFontResourceEx(m_szFontFile, FR_PRIVATE, NULL);
 	CFont* m_pFont = new CFont();
@@ -125,6 +125,8 @@ BOOL CMFCGameLine98Dlg::OnInitDialog()
 	mbmBkSel.LoadBitmap(IDB_BM_SEL);
 	mbmBkGame.LoadBitmap(IDB_BM_BKGGAME);
 	resetGame();
+	saveGameStt();
+	checkUndoRedo();
 	return TRUE;  // return TRUE  unless you set the focus to a control
 }
 
@@ -244,8 +246,6 @@ HCURSOR CMFCGameLine98Dlg::OnQueryDragIcon()
 	return static_cast<HCURSOR>(m_hIcon);
 }
 
-
-
 void CMFCGameLine98Dlg::OnTimer(UINT_PTR nIDEvent)
 {
 	// TODO: Add your message handler code here and/or call default
@@ -261,6 +261,8 @@ void CMFCGameLine98Dlg::OnTimer(UINT_PTR nIDEvent)
 		}
 		CString timeshow; timeshow.Format(L"%02d:%02d:%02d", nDispTime[0], nDispTime[1], nDispTime[2]);
 		mEdxTime.SetWindowTextW(timeshow);
+		//
+		//checkUndoRedo();
 	}
 	CDialogEx::OnTimer(nIDEvent);
 }
@@ -377,13 +379,9 @@ void CMFCGameLine98Dlg::OnLButtonDown(UINT nFlags, CPoint point)
 				// move pos small to other
 				if (mposTbl[i][j].type == SMALL)
 				{
-					for (auto& pos : nposRand)
-					{
-						if (pos.x == i && pos.y == j)
-						{
-							pos = nposRand[M];
-						}
-					}
+					mposTbl[nposRand[M].x][nposRand[M].y].status = SHOW;
+					mposTbl[nposRand[M].x][nposRand[M].y].type = SMALL;
+					mposTbl[nposRand[M].x][nposRand[M].y].color = ncolorRand[M];
 				}
 				// swap box selected
 				bselect = false;
@@ -392,10 +390,12 @@ void CMFCGameLine98Dlg::OnLButtonDown(UINT nFlags, CPoint point)
 				mposTbl[mposSel.x][mposSel.y] = postblNull;
 
 				// change small to large
-				for (int i = 0; i < M; i++) {
-					mposTbl[nposRand[i].x][nposRand[i].y].type = LARGE;
-					mposTbl[nposRand[i].x][nposRand[i].y].status = SHOW;
-					mposTbl[nposRand[i].x][nposRand[i].y].color = ncolorRand[i];
+				for (int i = 0; i < N; i++) {
+					for (int j = 0; j < N; j++) {
+						if (mposTbl[i][j].type == SMALL && mposTbl[i][j].status == SHOW) {
+							mposTbl[i][j].type = LARGE;
+						}
+					}
 				}
 				//create three small ball 
 				randomPoint(nposRand, ncolorRand);
@@ -408,6 +408,9 @@ void CMFCGameLine98Dlg::OnLButtonDown(UINT nFlags, CPoint point)
 				findLeftDiagonal();
 				calPoints();
 				setPosKills();
+				//
+				totalgoes++;
+				saveGameStt();
 			}
 			// select again
 			else if (mposTbl[i][j].status == SHOW && mposTbl[i][j].type == LARGE) {
@@ -466,11 +469,7 @@ void CMFCGameLine98Dlg::findHor()
 			}
 		}
 	}
-	//Sleep(1000);
-	//Invalidate(true);
 }
-
-
 void CMFCGameLine98Dlg::findVer()
 {
 	map<int, map<int, int>> m;
@@ -513,8 +512,6 @@ void CMFCGameLine98Dlg::findVer()
 			}
 		}
 	}
-	//Sleep(1000);
-	//Invalidate(true);
 }
 void CMFCGameLine98Dlg::findrightDiagonal() {
 	//  - right diagonal
@@ -731,15 +728,22 @@ void CMFCGameLine98Dlg::calPoints()
 void CMFCGameLine98Dlg::resetGame()
 {
 	memset(mposTbl, 0, sizeof(mposTbl));
+	memset(mposTblBef, 0, sizeof(mposTblBef));
 	memset(nDispTime, 0, sizeof(nDispTime));
+	memset(nScoresUndo, 0, sizeof(nScoresUndo));
 	nScores = 0;
 	bselect = false;
+	idxUndo = 0;
+	idxCur = 0;
+	totalgoes = 0;
+	idxUndoFirst = 0;
 	vtPosKills.clear();
 	randomPoint(nposRand, ncolorRand);
 	setPosStatus(nposRand, ncolorRand, SHOW, LARGE);
 	randomPoint(nposRand, ncolorRand);
 	setPosStatus(nposRand, ncolorRand, SHOW, SMALL);
 	calPoints();
+	saveGameStt();
 	Invalidate(true);
 }
 
@@ -834,8 +838,59 @@ bool CMFCGameLine98Dlg::checkPathExist(CPoint src, CPoint des)
 	bool visited[N][N];
 	memset(visited, false, sizeof(visited));
 	if (src == des)return true;
-	return (isPath(src.x+1, src.y, visited, des) || 
-		isPath(src.x-1, src.y, visited, des) ||
-		isPath(src.x, src.y+1, visited, des) ||
-		isPath(src.x, src.y-1, visited, des));
+	return (isPath(src.x + 1, src.y, visited, des) ||
+		isPath(src.x - 1, src.y, visited, des) ||
+		isPath(src.x, src.y + 1, visited, des) ||
+		isPath(src.x, src.y - 1, visited, des));
+}
+
+
+void CMFCGameLine98Dlg::OnBtnRedo()
+{
+	// TODO: Add your command handler code here
+	idxUndo = ++totalgoes % N;
+	memcpy(mposTbl, mposTblBef[idxUndo], sizeof(mposTbl));
+	nScores = nScoresUndo[idxUndo];
+	Invalidate(true);
+	calPoints();
+	checkUndoRedo();
+}
+
+void CMFCGameLine98Dlg::OnBtnUndo()
+{
+	// TODO: Add your command handler code here
+	idxUndo = --totalgoes % N;
+	memcpy(mposTbl, mposTblBef[idxUndo], sizeof(mposTbl));
+	nScores = nScoresUndo[idxUndo];
+	Invalidate(true);
+	calPoints();
+	checkUndoRedo();
+}
+
+void CMFCGameLine98Dlg::saveGameStt()
+{
+	idxCur = totalgoes % N;
+	memcpy(mposTblBef[idxCur], mposTbl, sizeof(mposTbl));
+	nScoresUndo[idxCur] = nScores;
+	idxUndo = idxCur;
+	if (idxCur == idxUndoFirst && totalgoes > 0) {
+		idxUndoFirst = (idxCur + 1) % N;
+	}
+	checkUndoRedo();
+}
+
+void CMFCGameLine98Dlg::checkUndoRedo()
+{
+	if (idxUndo == idxUndoFirst) {
+		m_ToolBar.GetToolBarCtrl().EnableButton(ID_BTN_UNDO, FALSE);
+	}
+	else {
+		m_ToolBar.GetToolBarCtrl().EnableButton(ID_BTN_UNDO, TRUE);
+	}
+	if (idxUndo == idxCur) {
+		m_ToolBar.GetToolBarCtrl().EnableButton(ID_BTN_REDO, FALSE);
+	}
+	else {
+		m_ToolBar.GetToolBarCtrl().EnableButton(ID_BTN_REDO, TRUE);
+	}
 }

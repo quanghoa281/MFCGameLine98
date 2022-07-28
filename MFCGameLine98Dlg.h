@@ -9,10 +9,15 @@
 
 using namespace std;
 
+struct Ballcell {
+	int color;  // 1 red/ 2 blue/ 3 green
+	int type;   // 1 large / 0 small
+	int status; // 0 hide / 1 show
+};
 
 constexpr auto N = 9; // total pos in each row
 constexpr auto M = 3; // amount pos random per turn
-constexpr auto MIN = 5; 
+constexpr auto MIN = 5;
 
 constexpr auto TCOLOR = 3;
 constexpr auto RED = 0;
@@ -22,7 +27,9 @@ constexpr auto SHOW = 1;
 constexpr auto HIDE = 0;
 constexpr auto LARGE = 1;
 constexpr auto SMALL = 0;
-
+constexpr auto P0x = 0;
+constexpr auto P0y = 37;
+constexpr auto SGAME = 900;
 // CMFCGameLine98Dlg dialog
 class CMFCGameLine98Dlg : public CDialogEx
 {
@@ -52,12 +59,21 @@ protected:
 	CBitmap mbmBkSel;
 	CBitmap mbmBkBox;
 
-	CPoint nposRand[M+1];
-	int ncolorRand[M+1];
+	Ballcell mposTbl[N][N];
+	Ballcell mposTblBef[N][N][N];
+	Ballcell postblNull;
+	int idxCur;
+	int idxUndoFirst;
+	int idxUndo;
+	int totalgoes;
+
+	CPoint nposRand[M + 1];
+	int ncolorRand[M + 1];
 	bool bselect;
 	CPoint mposSel;
 	CPoint mposSel2;
 	int nScores;
+	int nScoresUndo[N];
 	int nDispTime[3];
 
 	vector<CPoint>vtPosKills;
@@ -88,4 +104,8 @@ public:
 	void calPoints();
 	void resetGame();
 	afx_msg HBRUSH OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor);
+	afx_msg void OnBtnRedo();
+	afx_msg void OnBtnUndo();
+	void saveGameStt();
+	void checkUndoRedo();
 };

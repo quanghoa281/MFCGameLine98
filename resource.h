@@ -15,13 +15,16 @@
 #define ID_GAMES_EXIT                   32772
 #define ID_BTN_NEW                      32783
 #define ID_BTN_EXIT                     32784
+#define ID_BUTTON32785                  32785
+#define ID_BTN_REDO                     32785
+#define ID_BTN_UNDO                     32786
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        148
-#define _APS_NEXT_COMMAND_VALUE         32785
+#define _APS_NEXT_COMMAND_VALUE         32787
 #define _APS_NEXT_CONTROL_VALUE         1009
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
